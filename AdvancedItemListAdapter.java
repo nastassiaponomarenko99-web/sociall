@@ -421,38 +421,59 @@ public class AdvancedItemListAdapter extends RecyclerView.Adapter<AdvancedItemLi
     }
     public void releaseCurrent() {
         if (currentPlayer != null) {
-            try { currentPlayer.release(); }
-            // Minimal, defensive cleanup for the shared (auto-play) ExoPlayer
-            public void releaseSharedPlayer() {
-                // detach player from holder
-                if (sharedHolder != null) {
-                    try { if (sharedHolder.playerView != null) sharedHolder.playerView.setPlayer(null); } catch (Throwable ignore) {}
-                    sharedHolder = null;
-                }
-
-                // stop & release shared player
-                if (sharedPlayer != null) {
-                    try { sharedPlayer.stop(); } catch (Throwable ignore) {}
-                    try { sharedPlayer.release(); } catch (Throwable ignore) {}
-                    sharedPlayer = null;
-                }
-
-                if (sharedTrackSelector != null) {
-                    try { sharedTrackSelector = null; } catch (Throwable ignore) {}
-                }
-
-                sharedPosition = RecyclerView.NO_POSITION;
+            try {
+                currentPlayer.release();
+            } catch (Throwable ignored) {
+                // ignore
             }
-
-catch (Throwable ignore) {}
             currentPlayer = null;
         }
+
         if (currentPlayerViewHolder != null) {
-            try { currentPlayerViewHolder.releasePlayer(); } catch (Throwable ignore) {}
+            try {
+                currentPlayerViewHolder.releasePlayer();
+            } catch (Throwable ignored) {
+                // ignore
+            }
             currentPlayerViewHolder = null;
         }
+
         currentPlayingPosition = -1;
     }
+
+    public void releaseSharedPlayer() {
+        // detach player from holder
+        if (sharedHolder != null) {
+            try {
+                if (sharedHolder.playerView != null) {
+                    sharedHolder.playerView.setPlayer(null);
+                }
+            } catch (Throwable ignored) {
+                // ignore
+            }
+            sharedHolder = null;
+        }
+
+        // stop & release shared player
+        if (sharedPlayer != null) {
+            try {
+                sharedPlayer.stop();
+            } catch (Throwable ignored) {
+                // ignore
+            }
+            try {
+                sharedPlayer.release();
+            } catch (Throwable ignored) {
+                // ignore
+            }
+            sharedPlayer = null;
+        }
+
+        // clear selector and position
+        sharedTrackSelector = null;
+        sharedPosition = RecyclerView.NO_POSITION;
+    }
+
 
 
     private com.google.android.exoplayer2.ExoPlayer currentPlayer = null;
