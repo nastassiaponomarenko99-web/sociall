@@ -341,35 +341,7 @@ public class AdvancedItemListAdapter extends RecyclerView.Adapter<AdvancedItemLi
         holder.playerView.setUseController(false);
         holder.playerView.setPlayer(sharedPlayer);
 
-
-        if (holder.playerView != null) {
-            holder.playerView.setClickable(true);
-            holder.playerView.setFocusable(true);
-
-            final GestureDetector playerGestureDetector = new GestureDetector(holder.playerView.getContext(), new GestureDetector.SimpleOnGestureListener() {
-                @Override
-                public boolean onDoubleTap(MotionEvent e) {
-                    if (App.getInstance().getId() != 0 && !p.isMyLike()) {
-                        p.setMyLike(true);
-                        p.setLikesCount(p.getLikesCount() + 1);
-                        notifyItemChanged(adapterPosition);
-                        like(p, adapterPosition, 0);
-                    }
-                    showHeartAnimation(holder.mHeartOverlay);
-                    return true;
-                }
-                @Override
-                public boolean onSingleTapConfirmed(MotionEvent e) {
-                    // Optional: pause/play video, or do nothing.
-                    return false;
-                }
-            });
-
-            holder.playerView.setOnTouchListener((viewTouched, event) -> {
-                return playerGestureDetector.onTouchEvent(event);
-            });
-        }
-        // --- Double-tap like on playing video ---
+// --- Double-tap like on playing video ---
         final int adapterPosition = position; // ensure it's final for the lambda
 
         if (holder.playerView != null) {
@@ -390,6 +362,10 @@ public class AdvancedItemListAdapter extends RecyclerView.Adapter<AdvancedItemLi
                     // Optional: pause/play video, or do nothing.
                     return false;
                 }
+            });
+            holder.playerView.setOnTouchListener((viewTouched, event) -> {
+                playerGestureDetector.onTouchEvent(event);
+                return false; // Let player controls still work
             });
         }
 // --- End double-tap block ---
@@ -445,15 +421,59 @@ public class AdvancedItemListAdapter extends RecyclerView.Adapter<AdvancedItemLi
     }
     public void releaseCurrent() {
         if (currentPlayer != null) {
-            try { currentPlayer.release(); } catch (Throwable ignore) {}
+            try {
+                currentPlayer.release();
+            } catch (Throwable ignored) {
+                // ignore
+            }
             currentPlayer = null;
         }
+
         if (currentPlayerViewHolder != null) {
-            try { currentPlayerViewHolder.releasePlayer(); } catch (Throwable ignore) {}
+            try {
+                currentPlayerViewHolder.releasePlayer();
+            } catch (Throwable ignored) {
+                // ignore
+            }
             currentPlayerViewHolder = null;
         }
+
         currentPlayingPosition = -1;
     }
+
+    public void releaseSharedPlayer() {
+        // detach player from holder
+        if (sharedHolder != null) {
+            try {
+                if (sharedHolder.playerView != null) {
+                    sharedHolder.playerView.setPlayer(null);
+                }
+            } catch (Throwable ignored) {
+                // ignore
+            }
+            sharedHolder = null;
+        }
+
+        // stop & release shared player
+        if (sharedPlayer != null) {
+            try {
+                sharedPlayer.stop();
+            } catch (Throwable ignored) {
+                // ignore
+            }
+            try {
+                sharedPlayer.release();
+            } catch (Throwable ignored) {
+                // ignore
+            }
+            sharedPlayer = null;
+        }
+
+        // clear selector and position
+        sharedTrackSelector = null;
+        sharedPosition = RecyclerView.NO_POSITION;
+    }
+
 
 
     private com.google.android.exoplayer2.ExoPlayer currentPlayer = null;
