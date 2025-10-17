@@ -421,7 +421,30 @@ public class AdvancedItemListAdapter extends RecyclerView.Adapter<AdvancedItemLi
     }
     public void releaseCurrent() {
         if (currentPlayer != null) {
-            try { currentPlayer.release(); } catch (Throwable ignore) {}
+            try { currentPlayer.release(); }
+            // Minimal, defensive cleanup for the shared (auto-play) ExoPlayer
+            public void releaseSharedPlayer() {
+                // detach player from holder
+                if (sharedHolder != null) {
+                    try { if (sharedHolder.playerView != null) sharedHolder.playerView.setPlayer(null); } catch (Throwable ignore) {}
+                    sharedHolder = null;
+                }
+
+                // stop & release shared player
+                if (sharedPlayer != null) {
+                    try { sharedPlayer.stop(); } catch (Throwable ignore) {}
+                    try { sharedPlayer.release(); } catch (Throwable ignore) {}
+                    sharedPlayer = null;
+                }
+
+                if (sharedTrackSelector != null) {
+                    try { sharedTrackSelector = null; } catch (Throwable ignore) {}
+                }
+
+                sharedPosition = RecyclerView.NO_POSITION;
+            }
+
+catch (Throwable ignore) {}
             currentPlayer = null;
         }
         if (currentPlayerViewHolder != null) {
