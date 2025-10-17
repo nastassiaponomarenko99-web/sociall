@@ -167,7 +167,18 @@ public class AdvancedItemListAdapter extends RecyclerView.Adapter<AdvancedItemLi
                         currentPlayerViewHolder = null;
                         currentPlayingPosition = -1;
                     }
-                }
+                
+
+            // NEW: also handle the shared / autoplay player when its row detaches
+            if (holder == sharedHolder) {
+                try { if (sharedHolder.playerView != null) sharedHolder.playerView.setPlayer(null); } catch (Throwable ignore) {}
+                try { if (sharedPlayer != null) sharedPlayer.stop(); } catch (Throwable ignore) {}
+                try { if (sharedPlayer != null) sharedPlayer.release(); } catch (Throwable ignore) {}
+                sharedPlayer = null;
+                sharedHolder = null;
+                sharedPosition = RecyclerView.NO_POSITION;
+            }
+            }
             }
         });
     }
@@ -218,13 +229,20 @@ public class AdvancedItemListAdapter extends RecyclerView.Adapter<AdvancedItemLi
                 }
             }
         } else {
-            if (currentPlayerViewHolder != null) {
-                currentPlayerViewHolder.releasePlayer();
-                currentPlayer = null;
-                currentPlayerViewHolder = null;
-                currentPlayingPosition = -1;
-            }
+        // No sufficiently-visible video found - stop any active player(s)
+        if (currentPlayerViewHolder != null) {
+            currentPlayerViewHolder.releasePlayer();
+            currentPlayer = null;
+            currentPlayerViewHolder = null;
+            currentPlayingPosition = -1;
         }
+        if (sharedHolder != null) {
+            try { if (sharedHolder.playerView != null) sharedHolder.playerView.setPlayer(null); } catch (Throwable ignore) {}
+            try { if (sharedPlayer != null) { sharedPlayer.stop(); sharedPlayer.release(); sharedPlayer = null; } } catch (Throwable ignore) {}
+            sharedHolder = null;
+            sharedPosition = RecyclerView.NO_POSITION;
+        }
+                }
     }
 
     // Get the percent of the view visible in RecyclerView
@@ -787,7 +805,16 @@ public class AdvancedItemListAdapter extends RecyclerView.Adapter<AdvancedItemLi
             currentPlayerViewHolder = null;
             currentPlayingPosition = -1;
         }
-    }
+    
+        // Also clear shared holder/player if recycled holder was the shared one
+        if (sharedHolder == holder) {
+            try { if (sharedPlayer != null) sharedPlayer.stop(); } catch (Throwable ignore) {}
+            try { if (sharedPlayer != null) sharedPlayer.release(); } catch (Throwable ignore) {}
+            sharedPlayer = null;
+            sharedHolder = null;
+            sharedPosition = RecyclerView.NO_POSITION;
+        }
+}
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, final int position) {
